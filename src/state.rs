@@ -23,7 +23,7 @@ impl State {
     }
 
     fn winner(&self) -> Option<Player> {
-        const winning_arrangements: [[Position; 3]; 8] = [
+        const WINNING_ARRANGEMENTS: [[Position; 3]; 8] = [
             [Position::A0, Position::A1, Position::A2],
             [Position::B0, Position::B1, Position::B2],
             [Position::C0, Position::C1, Position::C2],
@@ -33,7 +33,7 @@ impl State {
             [Position::A0, Position::B1, Position::C2],
             [Position::A2, Position::B1, Position::C0],
         ];
-        winning_arrangements.iter().find_map(|seq| {
+        WINNING_ARRANGEMENTS.iter().find_map(|seq| {
             let marks: Option<Vec<Player>> =
                 seq.iter().map(|pos| self.board[pos.index()]).collect();
             match marks {
