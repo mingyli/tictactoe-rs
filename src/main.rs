@@ -11,23 +11,25 @@ use player::Player;
 use state::State;
 
 fn main() {
-    let inputs = [
-        Input {
-            pos: Position::A0,
-            player: Player::X,
-        },
-        Input {
-            pos: Position::A1,
-            player: Player::O,
-        },
-        Input {
-            pos: Position::A2,
-            player: Player::X,
-        },
-    ];
-    let end = inputs.iter().try_fold(State::initial(), State::transition);
-    match end {
-        Phase::End(state, winner) => println!("End\n{}\nWinner: {:?}", state, winner),
-        Phase::InProgress(state) => println!("InProgress\n{}", state),
+    fn read_position() -> Position {
+        use std::convert::TryFrom;
+        use std::io;
+        let mut buffer = String::new();
+        io::stdin().read_line(&mut buffer).unwrap();
+        Position::try_from(buffer).unwrap()
     }
+
+    let state = State::initial();
+    let mut phase = Phase::InProgress(state);
+    let mut player = Player::X;
+    while let Phase::InProgress(state) = phase {
+        println!("{}", state);
+        println!("Enter position for player {}: ", player);
+        let position = read_position();
+        let input = Input { position, player };
+        player = player.other();
+        println!("Applying {:?}", input);
+        phase = State::transition(state, &input);
+    }
+    println!("{}", phase);
 }

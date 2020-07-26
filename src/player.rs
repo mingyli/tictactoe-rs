@@ -5,9 +5,7 @@ pub enum Player {
 }
 
 impl Player {
-    const FIRST: Player = Player::X;
-
-    fn other(&self) -> Player {
+    pub fn other(&self) -> Player {
         match self {
             Player::X => Player::O,
             Player::O => Player::X,

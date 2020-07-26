@@ -1,4 +1,4 @@
-use crate::{Input, Phase, Player};
+use crate::{Input, Phase, Player, Position};
 
 #[derive(Debug, Default, PartialEq)]
 pub struct State {
@@ -6,29 +6,55 @@ pub struct State {
 }
 
 impl State {
-    pub fn transition(mut self, input: &Input) -> Phase {
-        // validation for alternating turns should occur at a higher level
-        println!("{}", self);
-        println!("Applying {:?}", input);
-        self.board[input.pos.index()] = Some(input.player);
+    fn apply_input(&mut self, input: &Input) {
+        self.board[input.position.index()] = Some(input.player);
+    }
 
-        // check win condition
+    pub fn transition(mut self, input: &Input) -> Phase {
+        self.apply_input(input);
+
         if let Some(winner) = self.winner() {
-            Phase::End(self, Some(winner))
+            Phase::Win(self, winner)
+        } else if self.board.iter().all(Option::is_some) {
+            Phase::Tie(self)
         } else {
             Phase::InProgress(self)
         }
     }
 
-    // Return winner or None for tie
     fn winner(&self) -> Option<Player> {
-        None
+        const winning_arrangements: [[Position; 3]; 8] = [
+            [Position::A0, Position::A1, Position::A2],
+            [Position::B0, Position::B1, Position::B2],
+            [Position::C0, Position::C1, Position::C2],
+            [Position::A0, Position::B0, Position::C0],
+            [Position::A1, Position::B1, Position::C1],
+            [Position::A2, Position::B2, Position::C2],
+            [Position::A0, Position::B1, Position::C2],
+            [Position::A2, Position::B1, Position::C0],
+        ];
+        winning_arrangements.iter().find_map(|seq| {
+            let marks: Option<Vec<Player>> =
+                seq.iter().map(|pos| self.board[pos.index()]).collect();
+            match marks {
+                None => None,
+                Some(marks) => {
+                    let player = marks[0];
+                    if marks.iter().all(|&mark| mark == player) {
+                        Some(player)
+                    } else {
+                        None
+                    }
+                }
+            }
+        })
     }
 
     pub fn initial() -> State {
         State::default()
     }
 }
+
 use std::fmt;
 impl fmt::Display for State {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -46,4 +72,72 @@ impl fmt::Display for State {
         }
         Ok(())
     }
+}
+
+#[test]
+fn test_state_transitions() {
+    use crate::Position;
+    let inputs = [
+        Input {
+            position: Position::A0,
+            player: Player::X,
+        },
+        Input {
+            position: Position::B0,
+            player: Player::O,
+        },
+        Input {
+            position: Position::C0,
+            player: Player::X,
+        },
+    ];
+    let end = inputs.iter().try_fold(State::initial(), State::transition);
+    assert_eq!(
+        end,
+        Phase::InProgress(State {
+            board: [
+                Some(Player::X),
+                Some(Player::O),
+                Some(Player::X),
+                None,
+                None,
+                None,
+                None,
+                None,
+                None
+            ]
+        })
+    );
+}
+
+#[test]
+fn test_winner() {
+    let state = State {
+        board: [
+            Some(Player::X),
+            Some(Player::O),
+            Some(Player::X),
+            None,
+            Some(Player::X),
+            None,
+            None,
+            None,
+            None,
+        ],
+    };
+    assert_eq!(state.winner(), None);
+    let state = State {
+        board: [
+            Some(Player::X),
+            Some(Player::O),
+            Some(Player::X),
+            None,
+            Some(Player::X),
+            None,
+            None,
+            None,
+            Some(Player::X),
+        ],
+    };
+    assert_eq!(state.winner(), Some(Player::X));
 }
