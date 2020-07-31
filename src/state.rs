@@ -12,10 +12,21 @@ impl State {
 
     pub fn transition(mut self, input: &Input) -> Phase {
         self.apply_input(input);
+        self = State::check_win(self)?;
+        self = State::check_tie(self)?;
+        Phase::InProgress(self)
+    }
 
+    fn check_win(self) -> Phase {
         if let Some(winner) = self.winner() {
             Phase::Win(self, winner)
-        } else if self.board.iter().all(Option::is_some) {
+        } else {
+            Phase::InProgress(self)
+        }
+    }
+
+    fn check_tie(self) -> Phase {
+        if self.board.iter().all(Option::is_some) {
             Phase::Tie(self)
         } else {
             Phase::InProgress(self)
